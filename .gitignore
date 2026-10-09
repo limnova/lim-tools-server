@@ -1,0 +1,22 @@
+# 构建产物
+/bin/
+*.exe
+*.test
+*.out
+
+# 覆盖率报告
+coverage.txt
+coverage.html
+
+# 依赖（本项目用 module proxy，不提交 vendor）
+/vendor/
+
+# 本地环境变量
+.env
+.env.local
+
+# 编辑器与系统文件
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

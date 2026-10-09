@@ -1,0 +1,39 @@
+# golangci-lint 配置。需要先安装：https://golangci-lint.run/welcome/install/
+# 本地跑 `make lint`，或直接用 golangci-lint run
+version: "2"
+
+linters:
+  default: standard
+  enable:
+    - bodyclose      # HTTP 响应体没关
+    - errorlint      # %w / errors.Is 用法
+    - exhaustive     # switch 漏了枚举分支
+    - gocritic       # 常见写法问题
+    - misspell       # 拼写
+    - nilerr         # 判断 err != nil 却返回 nil
+    - noctx          # 发请求没带 context
+    - prealloc       # 能预分配的切片
+    - revive         # 风格检查
+    - unconvert      # 多余的类型转换
+    - wastedassign   # 赋了没用的值
+  settings:
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment  # 结构体字段对齐，可读性优先
+  exclusions:
+    rules:
+      # 测试文件里放宽一些要求
+      - path: _test\.go
+        linters:
+          - errcheck
+          - forcetypeassert
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
