@@ -35,7 +35,7 @@ make lint         # golangci-lint（需自行安装）
 |---|---|---|
 | `LIM_TOOLS_ADDR` | `:8080` | HTTP 监听地址 |
 | `LIM_TOOLS_ENV` | `development` | 运行环境。设为 `production` 会切 gin release 模式、日志升到 Info 级 |
-| `LIM_TOOLS_SHUTDOWN_TIMEOUT` | `10s` | 优雅关闭时等待在途请求的上限 |
+| `LIM_TOOLS_SHUTDOWN_TIMEOUT` | `10s` | 优雅关闭时等待在途请求的上限；无效、零或负值回落到默认值，超时后关闭活跃连接 |
 
 ## 目录结构
 

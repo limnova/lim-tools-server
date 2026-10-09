@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -21,10 +22,10 @@ func newTestRouter(buf *bytes.Buffer) *gin.Engine {
 
 	r := gin.New()
 	r.Use(
+		middleware.AccessLog(),
 		middleware.Recovery(),
 		middleware.RequestID(),
 		middleware.WithRequestLogger(logger),
-		middleware.AccessLog(),
 	)
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -160,5 +161,32 @@ func TestRequestLoggerPropagatesIntoHandlerContext(t *testing.T) {
 
 	if record := findRecord(t, &buf, "from handler"); record["request_id"] != "ctx-42" {
 		t.Errorf("handler 里的日志 request_id = %v, want %q", record["request_id"], "ctx-42")
+	}
+}
+
+func TestRecoveryDoesNotWriteGinLogs(t *testing.T) {
+	for _, mode := range []string{gin.DebugMode, gin.ReleaseMode} {
+		t.Run(mode, func(t *testing.T) {
+			var logs, ginLogs bytes.Buffer
+			previousWriter := gin.DefaultErrorWriter
+			gin.DefaultErrorWriter = &ginLogs
+			t.Cleanup(func() {
+				gin.DefaultErrorWriter = previousWriter
+				gin.SetMode(gin.TestMode)
+			})
+			router := newTestRouter(&logs)
+			gin.SetMode(mode)
+			req := httptest.NewRequest(http.MethodGet, "/boom", nil)
+			req.Header.Set("Cookie", "session=test-secret")
+			router.ServeHTTP(httptest.NewRecorder(), req)
+
+			if ginLogs.Len() != 0 {
+				t.Error("panic recovery wrote unstructured Gin logs")
+			}
+			if strings.Contains(logs.String(), "test-secret") {
+				t.Error("panic logs contain request cookies")
+			}
+			findRecord(t, &logs, "panic recovered")
+		})
 	}
 }

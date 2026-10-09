@@ -30,13 +30,13 @@ func New(cfg config.Config, log *slog.Logger, routes *handler.Handler) *Server {
 	}
 
 	engine := gin.New()
-	// 顺序有讲究：Recovery 在最外层才能兜住后面所有中间件和 handler 的 panic；
-	// RequestID 必须早于日志，否则日志里没有 ID 可带。
+	// AccessLog 包住 Recovery，恢复后才能记录最终的 500 状态。
+	// Recovery 保护请求 ID、日志注入与 handler；RequestID 早于日志注入。
 	engine.Use(
+		middleware.AccessLog(),
 		middleware.Recovery(),
 		middleware.RequestID(),
 		middleware.WithRequestLogger(log),
-		middleware.AccessLog(),
 	)
 	routes.Register(engine)
 
@@ -61,15 +61,15 @@ func (s *Server) Run(ctx context.Context) error {
 
 	go func() {
 		s.log.InfoContext(ctx, "http server listening", "addr", s.http.Addr, "env", s.cfg.Env)
-		err := s.http.ListenAndServe()
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			errCh <- err
-		}
+		errCh <- s.http.ListenAndServe()
 	}()
 
 	select {
 	case err := <-errCh:
-		return err
+		if errors.Is(err, http.ErrServerClosed) {
+			return nil
+		}
+		return fmt.Errorf("listen and serve: %w", err)
 	case <-ctx.Done():
 	}
 
@@ -78,8 +78,17 @@ func (s *Server) Run(ctx context.Context) error {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), s.cfg.ShutdownTimeout)
 	defer cancel()
 
+	var shutdownErr error
 	if err := s.http.Shutdown(shutdownCtx); err != nil {
-		return fmt.Errorf("graceful shutdown: %w", err)
+		shutdownErr = fmt.Errorf("graceful shutdown: %w", err)
+		// Shutdown 超时不会关闭活跃连接；强制关闭以取消请求 context。
+		if closeErr := s.http.Close(); closeErr != nil {
+			shutdownErr = errors.Join(shutdownErr, fmt.Errorf("close server: %w", closeErr))
+		}
 	}
-	return nil
+	// 等待监听 goroutine 退出，同时保留与取消信号并发发生的启动错误。
+	if err := <-errCh; err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return errors.Join(shutdownErr, fmt.Errorf("listen and serve: %w", err))
+	}
+	return shutdownErr
 }

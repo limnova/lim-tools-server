@@ -43,10 +43,31 @@ func TestLoad(t *testing.T) {
 				ShutdownTimeout: 10 * time.Second,
 			},
 		},
+		{
+			name: "零时长回落默认值",
+			env:  map[string]string{"LIM_TOOLS_SHUTDOWN_TIMEOUT": "0s"},
+			want: config.Config{
+				Addr:            ":8080",
+				Env:             "development",
+				ShutdownTimeout: 10 * time.Second,
+			},
+		},
+		{
+			name: "负时长回落默认值",
+			env:  map[string]string{"LIM_TOOLS_SHUTDOWN_TIMEOUT": "-1s"},
+			want: config.Config{
+				Addr:            ":8080",
+				Env:             "development",
+				ShutdownTimeout: 10 * time.Second,
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			for _, key := range []string{"LIM_TOOLS_ADDR", "LIM_TOOLS_ENV", "LIM_TOOLS_SHUTDOWN_TIMEOUT"} {
+				t.Setenv(key, "")
+			}
 			for key, value := range tt.env {
 				t.Setenv(key, value)
 			}

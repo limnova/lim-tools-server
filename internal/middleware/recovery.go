@@ -12,10 +12,10 @@ import (
 
 // Recovery 捕获 panic，用 slog 记录堆栈，并返回 500。
 //
-// 不用 gin.Recovery()：它把堆栈写到 gin 自己的 writer，格式与我们的结构化日志不一致；
-// 而且在 release 模式下它几乎不输出，panic 会被静默吞掉 —— 线上出了问题什么都看不到。
+// 关闭 Gin 自带的文本日志通道，统一由请求级 slog 记录。
+// 仍沿用 Gin 对连接断开和 http.ErrAbortHandler 的处理。
 func Recovery() gin.HandlerFunc {
-	return gin.CustomRecovery(func(c *gin.Context, recovered any) {
+	return gin.CustomRecoveryWithWriter(nil, func(c *gin.Context, recovered any) {
 		ctx := c.Request.Context()
 
 		logging.FromContext(ctx).ErrorContext(ctx, "panic recovered",

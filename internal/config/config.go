@@ -51,7 +51,7 @@ func durationOr(key string, fallback time.Duration) time.Duration {
 		return fallback
 	}
 	parsed, err := time.ParseDuration(raw)
-	if err != nil {
+	if err != nil || parsed <= 0 {
 		return fallback
 	}
 	return parsed
