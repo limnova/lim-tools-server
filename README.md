@@ -29,13 +29,30 @@ make lint         # golangci-lint（需自行安装）
 
 ## 配置
 
-按 12-Factor，配置全部来自环境变量，不读配置文件：
+按 12-Factor，配置全部来自环境变量，不读配置文件。变量名到字段的映射用 struct tag 声明
+（[caarlos0/env](https://github.com/caarlos0/env)），见 `internal/config/config.go`。
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
 | `LIM_TOOLS_ADDR` | `:8080` | HTTP 监听地址 |
-| `LIM_TOOLS_ENV` | `development` | 运行环境。设为 `production` 会切 gin release 模式、日志升到 Info 级 |
-| `LIM_TOOLS_SHUTDOWN_TIMEOUT` | `10s` | 优雅关闭时等待在途请求的上限；无效、零或负值回落到默认值，超时后关闭活跃连接 |
+| `LIM_TOOLS_ENV` | `development` | 运行环境。设为 `production` 会切 gin release 模式、日志升到 Info 级，并关闭 `.env` 加载 |
+| `LIM_TOOLS_SHUTDOWN_TIMEOUT` | `10s` | 优雅关闭时等待在途请求的上限；零或负值回落默认值，超时后关闭活跃连接 |
+| `LIM_TOOLS_DB_HOST` | `127.0.0.1` | PostgreSQL 主机 |
+| `LIM_TOOLS_DB_PORT` | `5432` | PostgreSQL 端口 |
+| `LIM_TOOLS_DB_NAME` | 无 | 数据库名 |
+| `LIM_TOOLS_DB_USER` | 无 | 连接账号 |
+| `LIM_TOOLS_DB_PASSWORD` | 无 | 连接密码，没有默认值 |
+| `LIM_TOOLS_DB_SSLMODE` | `disable` | libpq 风格 SSL 模式 |
+
+**校验**：变量缺失用默认值补上；值格式非法（如时长写成 `not-a-duration`、端口写成非数字）
+会让 `Load()` 返回错误，进程启动即退出，不会带着可疑的值继续跑。
+
+**`.env`**：本地开发可以 `cp .env.example .env`。该文件仅在**非 production** 环境加载，
+且**不覆盖**进程中已存在的环境变量。生产部署请直接设置环境变量 —— 留一个 `.env` 会把部署
+问题掩盖成本地文件问题。
+
+数据库字段目前都不是必填：连接层还没落地，服务需要在没有任何数据库配置的情况下也能启动。
+连接层接上后，`Name` / `User` / `Password` 应当补上 required。
 
 ## 目录结构
 
