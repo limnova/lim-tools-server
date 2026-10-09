@@ -24,6 +24,8 @@ type Config struct {
 	// ShutdownTimeout 是收到退出信号后，等待在途请求结束的最长时间。
 	// 零值或负值会让关闭上下文立即过期并强制断开在途请求，因此由 Load 兜底成默认值。
 	ShutdownTimeout time.Duration `env:"LIM_TOOLS_SHUTDOWN_TIMEOUT" envDefault:"10s"`
+	// WorkbookDir is the persistent directory owned by a single service process.
+	WorkbookDir string `env:"LIM_TOOLS_WORKBOOK_DIR" envDefault:"./data/workbooks"`
 	// DB 是 PostgreSQL 连接配置。
 	DB DB `envPrefix:"LIM_TOOLS_DB_"`
 }

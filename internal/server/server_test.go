@@ -22,7 +22,7 @@ import (
 func TestPanicRequestIsLogged(t *testing.T) {
 	var logs bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&logs, nil))
-	routes := handler.New(service.NewInfoService("test", "test", "test"))
+	routes := handler.New(service.NewInfoService("test", "test", "test"), nil)
 	srv := New(config.Config{Env: "production"}, logger, routes)
 	t.Cleanup(func() { gin.SetMode(gin.TestMode) })
 	srv.http.Handler.(*gin.Engine).GET("/boom", func(*gin.Context) { panic("kaboom") })

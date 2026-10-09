@@ -44,7 +44,17 @@ func main() {
 	// 手动构造函数注入，依赖关系一眼可见：
 	// config → logging → service → handler → server
 	infoSvc := service.NewInfoService("lim-tools-server", cfg.Env, version)
-	routes := handler.New(infoSvc)
+	workbooks, err := service.NewWorkbookService(cfg.WorkbookDir)
+	if err != nil {
+		log.ErrorContext(ctx, "could not open workbook storage", "error", err)
+		os.Exit(1)
+	}
+	defer func() {
+		if err := workbooks.Close(); err != nil {
+			log.Error("could not close workbook storage", "error", err)
+		}
+	}()
+	routes := handler.New(infoSvc, workbooks)
 	srv := server.New(cfg, log, routes)
 
 	if err := srv.Run(ctx); err != nil {

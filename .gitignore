@@ -11,6 +11,9 @@ coverage.html
 # 依赖（本项目用 module proxy，不提交 vendor）
 /vendor/
 
+# 本地工作簿数据
+/data/
+
 # 本地环境变量
 .env
 .env.local

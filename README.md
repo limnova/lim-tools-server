@@ -37,6 +37,7 @@ make lint         # golangci-lint（需自行安装）
 | `LIM_TOOLS_ADDR` | `:8080` | HTTP 监听地址 |
 | `LIM_TOOLS_ENV` | `development` | 运行环境。设为 `production` 会切 gin release 模式、日志升到 Info 级，并关闭 `.env` 加载 |
 | `LIM_TOOLS_SHUTDOWN_TIMEOUT` | `10s` | 优雅关闭时等待在途请求的上限；零或负值回落默认值，超时后关闭活跃连接 |
+| `LIM_TOOLS_WORKBOOK_DIR` | `./data/workbooks` | 工作簿持久目录，一个服务进程独占；部署时挂载持久卷 |
 | `LIM_TOOLS_DB_HOST` | `127.0.0.1` | PostgreSQL 主机 |
 | `LIM_TOOLS_DB_PORT` | `5432` | PostgreSQL 端口 |
 | `LIM_TOOLS_DB_NAME` | 无 | 数据库名 |
@@ -88,6 +89,27 @@ config → service → handler → server
 |---|---|---|
 | GET | `/healthz` | 存活探针，不查依赖 |
 | GET | `/api/v1/info` | 服务自述：名称、环境、版本、启动时间 |
+| GET | `/api/v1/workbooks` | 文件列表，按最后修改时间降序，不包含快照 |
+| POST | `/api/v1/workbooks` | 创建，JSON 请求包含 `name` 和 `snapshot`，返回完整文件 |
+| GET | `/api/v1/workbooks/:id` | 获取元数据与完整 Univer 快照 |
+| PUT | `/api/v1/workbooks/:id` | 保存，包含 `name`、`snapshot`、当前 `revision`，返回更新后的元数据 |
+| DELETE | `/api/v1/workbooks/:id?revision=N` | 删除指定版本；版本过期返回 409 |
+
+### 在线表格存储
+
+`internal/service/workbook.go` 保存每个工作簿的完整 JSON 快照，包括公式、样式和插件资源。
+写入临时文件、同步并关闭成功后替换正式文件；进程内锁保护读取版本与替换的完整事务。
+数据刷新或服务重启后保留，目录已忽略提交。文件 ID 由服务端生成；读取与删除通过 `os.Root`
+限制在配置目录内。单实例独占目录，多个实例共享目录不受支持。
+
+请求必须为 `application/json`，最大 10 MB。名称最多 120 字符；最多 100 张工作表，
+每表 100,000 行 / 1,024 列，全部工作表最多 200,000 个已存单元格。
+无效输入返回 400，超限请求返回 413；不存在返回 404，版本冲突返回 409，存储错误返回 500。
+内部存储错误只记录在服务端日志，HTTP 返回中文提示。
+
+首版是共享工作区，没有用户身份和文件权限。该存储不连接现有 MongoDB / PostgreSQL；
+之后可以换数据库存储并保留 HTTP 契约。生产使用须接入身份与权限，并挂载、备份持久目录。
+评论与实时协作规划见 [聚合仓库实施方案](../docs/spreadsheet-plan.md)。
 
 ## 日志
 

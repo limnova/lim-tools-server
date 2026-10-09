@@ -12,6 +12,7 @@ var allKeys = []string{
 	"LIM_TOOLS_ADDR",
 	"LIM_TOOLS_ENV",
 	"LIM_TOOLS_SHUTDOWN_TIMEOUT",
+	"LIM_TOOLS_WORKBOOK_DIR",
 	"LIM_TOOLS_DB_HOST",
 	"LIM_TOOLS_DB_PORT",
 	"LIM_TOOLS_DB_NAME",
@@ -26,6 +27,7 @@ func defaults() config.Config {
 		Addr:            ":8080",
 		Env:             "development",
 		ShutdownTimeout: 10 * time.Second,
+		WorkbookDir:     "./data/workbooks",
 		DB: config.DB{
 			Host:    "127.0.0.1",
 			Port:    5432,
@@ -61,6 +63,7 @@ func TestLoad(t *testing.T) {
 				Addr:            ":9000",
 				Env:             "production",
 				ShutdownTimeout: 30 * time.Second,
+				WorkbookDir:     "./data/workbooks",
 				DB: config.DB{
 					Host:    "127.0.0.1",
 					Port:    5432,
@@ -82,6 +85,7 @@ func TestLoad(t *testing.T) {
 				Addr:            ":8080",
 				Env:             "development",
 				ShutdownTimeout: 10 * time.Second,
+				WorkbookDir:     "./data/workbooks",
 				DB: config.DB{
 					Host:     "db.internal",
 					Port:     6543,

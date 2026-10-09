@@ -17,7 +17,7 @@ func newTestRouter() *gin.Engine {
 
 	infoSvc := service.NewInfoService("lim-tools-server", "test", "test-version")
 	r := gin.New()
-	handler.New(infoSvc).Register(r)
+	handler.New(infoSvc, nil).Register(r)
 	return r
 }
 
