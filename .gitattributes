@@ -1,0 +1,6 @@
+# 仓库内容一律用 LF 存，工作区也检出为 LF。
+#
+# 没有这条规则时，Windows 上的 core.autocrlf=true 会把工作区检出成 CRLF：
+# gofmt -l 会把格式完全正常的文件误报为"未格式化"，CI 与本地结论不一致；
+# 编辑器保存的 CRLF 也更容易混进 blob。Git 自身、shell 脚本和 Makefile 都只认 LF。
+* text=auto eol=lf
